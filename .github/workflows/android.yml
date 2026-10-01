@@ -61,8 +61,4 @@ jobs:
         with:
           name: disac-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
-<<<<<<< HEAD
           if-no-files-found: error
-=======
-          if-no-files-found: error
->>>>>>> b0ddd90 (Ajout setting option)
