@@ -1,11 +1,31 @@
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { db } from '@/lib/localDb';
 import { MESSAGE_TYPES } from '@/lib/messageTypes';
-import { localISO, fmtDate, weekRange } from '@/lib/format';
+import { fmtDate } from '@/lib/format';
 import { useSettings } from '@/hooks/useUnit';
 
 const DUE = ['CRHSBE', 'CRHTER', 'CRHAS'];
+
+function isoToDateInput(date) {
+  const d = new Date(date);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+
+function getWeekRange(weekStartDay, weeksBack = 0) {
+  const today = new Date();
+  const currentDay = today.getDay();
+  const offsetToStart = (currentDay - weekStartDay + 7) % 7;
+  const start = new Date(today);
+  start.setDate(today.getDate() - offsetToStart - weeksBack * 7);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+
+  return {
+    start: isoToDateInput(start),
+    end: isoToDateInput(end),
+  };
+}
 
 export default function MissingReports() {
   const { data: settings } = useSettings();
@@ -14,68 +34,70 @@ export default function MissingReports() {
   const { data: missingWeeks = [] } = useQuery({
     queryKey: ['missingReports', weekDay],
     queryFn: async () => {
-      // Check current week and previous 12 weeks
-      const missing = [];
-      
+      const results = [];
+
       for (let weeksBack = 0; weeksBack <= 12; weeksBack++) {
-        const offset = weeksBack * 7;
-        const { start, end } = weekRange(weekDay, -offset);
-        
-        // Check if any of the due reports are missing for this week
+        const { start, end } = getWeekRange(weekDay, weeksBack);
+
         const counts = await Promise.all(
-          DUE.map((type) => db.messages.count({ type, date: { $gte: start, $lte: end } }))
+          DUE.map((type) =>
+            db.messages.count({
+              type,
+              date: { $gte: start, $lte: end },
+            })
+          )
         );
-        
-        const hasMissing = counts.some(count => count === 0);
-        
-        if (hasMissing) {
-          missing.push({
+
+        const missingTypes = DUE.filter((_, i) => counts[i] === 0);
+
+        if (missingTypes.length > 0) {
+          results.push({
             start,
             end,
-            week: weeksBack,
-            counts,
-            missingTypes: DUE.filter((_, i) => counts[i] === 0)
+            label: weeksBack === 0 ? 'Semaine courante' : `Semaine du ${fmtDate(start)} au ${fmtDate(end)}`,
+            missingTypes,
+            weeksBack,
           });
-        } else if (weeksBack > 0) {
-          // Stop if we find a complete week
-          break;
         }
       }
-      
-      return missing;
+
+      return results;
     },
   });
 
-  if (missingWeeks.length === 0) return null;
+  if (!missingWeeks.length) return null;
 
   return (
-    <section className="dashboard-section rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 p-6">
+    <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 dark:border-amber-900/70 dark:bg-amber-950/30">
       <div className="flex items-start gap-3">
-        <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300" />
         <div className="min-w-0 flex-1">
-          <h2 className="font-heading text-lg text-amber-900 dark:text-amber-100 mb-3">
-            Rapports manquants
+          <h2 className="font-heading text-xl text-amber-900 dark:text-amber-100">
+            CR hebdomadaires non émis
           </h2>
-          <div className="space-y-3">
+
+          <div className="mt-4 space-y-3">
             {missingWeeks.map((week) => (
-              <div key={`${week.start}-${week.end}`} className="bg-white/50 dark:bg-black/30 rounded-lg p-3">
-                <div className="flex items-baseline justify-between mb-2">
+              <div
+                key={`${week.start}-${week.end}`}
+                className="rounded-xl border border-amber-200 bg-white/60 p-3 dark:border-amber-800 dark:bg-black/10"
+              >
+                <div className="mb-2 flex items-center justify-between gap-2">
                   <span className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                    Semaine du {fmtDate(week.start)} au {fmtDate(week.end)}
+                    {week.weeksBack === 0 ? 'Semaine en cours' : `Semaine manquée (${week.weeksBack} semaine${week.weeksBack > 1 ? 's' : ''} précédente${week.weeksBack > 1 ? 's' : ''})`}
                   </span>
-                  {week.week > 0 && (
-                    <span className="text-xs text-amber-700 dark:text-amber-300">
-                      il y a {week.week} semaine{week.week > 1 ? 's' : ''}
-                    </span>
-                  )}
+                  <span className="text-[11px] font-mono text-amber-700 dark:text-amber-300">
+                    {fmtDate(week.start)} → {fmtDate(week.end)}
+                  </span>
                 </div>
+
                 <div className="flex flex-wrap gap-2">
                   {week.missingTypes.map((type) => {
                     const T = MESSAGE_TYPES[type];
                     return (
                       <span
                         key={type}
-                        className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-amber-200/70 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 font-mono"
+                        className="inline-flex items-center rounded-full bg-amber-200/80 px-2.5 py-1 text-[11px] font-medium text-amber-900 dark:bg-amber-900/60 dark:text-amber-100"
                       >
                         {T.name}
                       </span>
