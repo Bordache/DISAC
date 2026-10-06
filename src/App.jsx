@@ -14,6 +14,7 @@ import History from '@/pages/History';
 import Fleet from '@/pages/Fleet';
 import Settings from '@/pages/Settings';
 import Help from '@/pages/Help';
+import TodoList from '@/pages/TodoList';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
               <Route path="/flotte" element={<Fleet />} />
               <Route path="/parametres" element={<Settings />} />
               <Route path="/aide" element={<Help />} />
+              <Route path="/taches" element={<TodoList />} />
             </Route>
             <Route path="*" element={<PageNotFound />} />
           </Routes>
