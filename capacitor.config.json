@@ -2,7 +2,7 @@
   "appId": "mg.disac.app",
   "appName": "DISAC",
   "webDir": "dist",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "server": {
     "androidScheme": "https"
   },
