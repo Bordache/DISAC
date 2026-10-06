@@ -2,10 +2,19 @@
   "appId": "mg.disac.app",
   "appName": "DISAC",
   "webDir": "dist",
+  "version": "1.0.0",
   "server": {
     "androidScheme": "https"
   },
   "android": {
-    "allowMixedContent": false
+    "allowMixedContent": false,
+    "minVersion": 24,
+    "buildOptions": {
+      "keystorePath": "android/app/release-signing.keystore",
+      "keystorePassword": "${KEYSTORE_PASSWORD}",
+      "keystoreAlias": "${KEYSTORE_ALIAS}",
+      "keystoreAliasPassword": "${KEYSTORE_ALIAS_PASSWORD}",
+      "releaseType": "APK"
+    }
   }
 }
