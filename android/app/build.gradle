@@ -1,0 +1,32 @@
+android {
+    namespace "mg.disac.app"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "mg.disac.app"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("release-signing.keystore")
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: ""
+            keyAlias System.getenv("KEYSTORE_ALIAS") ?: ""
+            keyPassword System.getenv("KEYSTORE_ALIAS_PASSWORD") ?: ""
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+        }
+        debug {
+            applicationIdSuffix ".debug"
+            debuggable true
+        }
+    }
+}
